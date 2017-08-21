@@ -2,14 +2,16 @@ import re
 import pdb
 import xml.sax
 from nltk.corpus import stopwords
+from nltk.stem.porter import *
 
 stopWords = set(stopwords.words('english'))
+stemmer = PorterStemmer()
 
 class Doc():
 
-    def __init__(self, ID, title, text, redirect):
-        
-        self.processText(text)
+    def __init__(self):
+
+        pass
         
     
     def tokenize(self, data):
@@ -20,8 +22,18 @@ class Doc():
         data = data.split()
         return data
 
+    
+    def removeStopWords(self, data):
+        
+        return [w for w in data if not w in stopWords]
 
-    def processText(self, text):
+
+    def stem(self, data):
+        
+        return map(lambda x: stemmer.stem(x), data)
+
+
+    def processText(self, ID, text, title):
         
         text = text.lower() #Case Folding
         references = self.extractReferences(text)
@@ -29,6 +41,16 @@ class Doc():
         categories = self.extractCategories(text)
         info = self.extractInfobox(text)
         body = self.extractBody(text)
+        title = self.extractTitle(title.lower())
+
+        return (title, body, info, categories, links, references)
+
+    def extractTitle(self, text):
+
+        data = self.tokenize(text)
+        data = self.removeStopWords(data)
+        data = self.stem(data)
+        return data
 
 
     def extractBody(self, text):
@@ -38,7 +60,10 @@ class Doc():
             data = text.split('== references == ')
         data = re.sub(r'\{\{.*\}\}', r' ', data[0])
         
-        return self.tokenize(data)
+        data = self.tokenize(data)
+        data = self.removeStopWords(data)
+        data = self.stem(data)
+        return data
 
 
     def extractInfobox(self, text):
@@ -56,7 +81,10 @@ class Doc():
                     continue
                 info.append(line)
 
-        return self.tokenize(' '.join(info))            
+        data = self.tokenize(' '.join(info))
+        data = self.removeStopWords(data)
+        data = self.stem(data)
+        return data
 
 
     def extractReferences(self, text):
@@ -72,7 +100,10 @@ class Doc():
             if re.search(r'<ref', line):
                 refs.append(re.sub(r'.*title[\ ]*=[\ ]*([^\|]*).*', r'\1', line))
 
-        return self.tokenize(' '.join(refs))
+        data = self.tokenize(' '.join(refs))
+        data = self.removeStopWords(data)
+        data = self.stem(data)
+        return data
 
 
     def extractCategories(self, text):
@@ -83,7 +114,10 @@ class Doc():
             if re.match(r'\[\[category', line):
                 categories.append(re.sub(r'\[\[category:(.*)\]\]', r'\1', line))
         
-        return self.tokenize(' '.join(categories))
+        data = self.tokenize(' '.join(categories))
+        data = self.removeStopWords(data)
+        data = self.stem(data)
+        return data
 
 
     def extractExternalLinks(self, text):
@@ -97,7 +131,10 @@ class Doc():
             if re.match(r'\*[\ ]*\[', line):
                 links.append(line)
         
-        return self.tokenize(' '.join(links))
+        data = self.tokenize(' '.join(links))
+        data = self.removeStopWords(data)
+        data = self.stem(data)
+        return data
                  
 
 class DocHandler(xml.sax.ContentHandler):
@@ -127,7 +164,8 @@ class DocHandler(xml.sax.ContentHandler):
     def endElement(self, tag):
        
         if tag == 'page':
-            self.docs.append(Doc(self.ID, self.title, self.text, self.redirect))
+            d = Doc()
+            self.docs.append(d.processText(self.ID, self.title, self.text))
             self.CurrentData = ''
             self.title = ''
             self.text = ''
@@ -148,14 +186,15 @@ class DocHandler(xml.sax.ContentHandler):
 
 class Parser():
 
-    def __init__(self):
+    def __init__(self, filename):
 
         self.parser = xml.sax.make_parser()
         self.parser.setFeature(xml.sax.handler.feature_namespaces, 0)
         Handler = DocHandler()
         self.parser.setContentHandler(Handler)
-        self.parser.parse('../data/wiki-search-small.xml')
+        self.parser.parse(filename)
+        pdb.set_trace()
 
 if __name__ == '__main__':
 
-    parser = Parser()
+    parser = Parser('../data/wiki-search-small.xml')
