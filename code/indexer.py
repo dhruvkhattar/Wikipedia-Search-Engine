@@ -29,11 +29,11 @@ class Doc():
     def tokenize(self, data):
 
         #data = re.sub(r'[^a-z0-9 ]',' ', data)
-        data = re.findall("[\d]+|[\w]+", data)
-        #data = re.sub(r'http[^\ ]*\ ', r' ', data) # removing urls
-        #data = re.sub(r'&nbsp;|&lt;|&gt;|&amp;|&quot;|&apos;', r' ', data) # removing html entities
-        #data = re.sub(r'\'\||\.|\*|\[|\]|\:|\;|\,|\{|\}|\(|\)|\=|\+|\-|\_|\#|\!|\`|\"|\?|\/|\>|\<|\&|\\|\u2013|\n', r' ', data) # removing special characters
-        return data
+        #data = re.findall("[\d]+|[\w]+", data)
+        data = re.sub(r'http[^\ ]*\ ', r' ', data) # removing urls
+        data = re.sub(r'&nbsp;|&lt;|&gt;|&amp;|&quot;|&apos;', r' ', data) # removing html entities
+        data = re.sub(r'\—|\%|\$|\'|\||\.|\*|\[|\]|\:|\;|\,|\{|\}|\(|\)|\=|\+|\-|\_|\#|\!|\`|\"|\?|\/|\>|\<|\&|\\|\u2013|\n', r' ', data) # removing special characters
+        return data.split()
 
     
     def removeStopWords(self, data):
