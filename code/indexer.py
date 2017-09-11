@@ -11,6 +11,7 @@ from nltk.corpus import stopwords
 from nltk.stem.porter import *
 import Stemmer
 import threading
+from unidecode import unidecode
 
 stemmer = Stemmer.Stemmer('english')
 #stemmer = PorterStemmer()
@@ -34,7 +35,8 @@ class Doc():
 
 
     def tokenize(self, data):
-
+    
+        data = data.encode("ascii", errors="ignore").decode()
         data = re.sub(r'http[^\ ]*\ ', r' ', data) # removing urls
         data = re.sub(r'&nbsp;|&lt;|&gt;|&amp;|&quot;|&apos;', r' ', data) # removing html entities
         data = re.sub(r'\—|\%|\$|\'|\||\.|\*|\[|\]|\:|\;|\,|\{|\}|\(|\)|\=|\+|\-|\_|\#|\!|\`|\"|\?|\/|\>|\<|\&|\\|\u2013|\n', r' ', data) # removing special characters
@@ -283,6 +285,7 @@ def writeFinalIndex(data, finalCount, offsetSize):
     for key in sorted(data.keys()):
         docs = data[key]
         temp = []
+        
         for i in range(len(docs)):
             posting = docs[i]
             docID = re.sub(r'.*d([0-9]*).*', r'\1', posting)
@@ -290,38 +293,26 @@ def writeFinalIndex(data, finalCount, offsetSize):
             temp = re.sub(r'.*t([0-9]*).*', r'\1', posting)
             if temp != posting:
                 title[key][docID] = float(temp)
-            else:
-                title[key][docID] = 0
             
             temp = re.sub(r'.*b([0-9]*).*', r'\1', posting)
             if temp != posting:
                 body[key][docID] = float(temp)
-            else:
-                body[key][docID] = 0
 
             temp = re.sub(r'.*i([0-9]*).*', r'\1', posting)
             if temp != posting:
                 info[key][docID] = float(temp)
-            else:
-                info[key][docID] = 0
 
             temp = re.sub(r'.*c([0-9]*).*', r'\1', posting)
             if temp != posting:
                 category[key][docID] = float(temp)
-            else:
-                category[key][docID] = 0
 
             temp = re.sub(r'.*l([0-9]*).*', r'\1', posting)
             if temp != posting:
                 link[key][docID] = float(temp)
-            else:
-                link[key][docID] = 0
             
             temp = re.sub(r'.*r([0-9]*).*', r'\1', posting)
             if temp != posting:
                 reference[key][docID] = float(temp)
-            else:
-                reference[key][docID] = 0
 
         string = key + ' ' + str(finalCount) + ' ' + str(len(docs))
         distinctWords.append(string)
@@ -390,8 +381,8 @@ def writeFinalIndex(data, finalCount, offsetSize):
             docs = sorted(docs, key = docs.get, reverse=True)
             for doc in docs:
                 string += doc + ' ' + str(category[key][doc]) + ' '
-            categoryOffset.append(str(prevInfo) + ' ' + str(len(docs)))
-            prevInfo += len(string) + 1
+            categoryOffset.append(str(prevCategory) + ' ' + str(len(docs)))
+            prevCategory += len(string) + 1
             categoryData.append(string)
 
         if key in link:
@@ -400,8 +391,8 @@ def writeFinalIndex(data, finalCount, offsetSize):
             docs = sorted(docs, key = docs.get, reverse=True)
             for doc in docs:
                 string += doc + ' ' + str(link[key][doc]) + ' '
-            linkOffset.append(str(prevInfo) + ' ' + str(len(docs)))
-            prevInfo += len(string) + 1
+            linkOffset.append(str(prevLink) + ' ' + str(len(docs)))
+            prevLink += len(string) + 1
             linkData.append(string)
 
         if key in reference:
@@ -410,8 +401,8 @@ def writeFinalIndex(data, finalCount, offsetSize):
             docs = sorted(docs, key = docs.get, reverse=True)
             for doc in docs:
                 string += doc + ' ' + str(reference[key][doc]) + ' '
-            referenceOffset.append(str(prevInfo) + ' ' + str(len(docs)))
-            prevInfo += len(string) + 1
+            referenceOffset.append(str(prevReference) + ' ' + str(len(docs)))
+            prevReference += len(string) + 1
             referenceData.append(string)
 
         
@@ -426,9 +417,9 @@ def writeFinalIndex(data, finalCount, offsetSize):
     
     thread.append(writeThread('t', titleData, titleOffset, finalCount))
     thread.append(writeThread('b', bodyData, bodyOffset, finalCount))
-    thread.append(writeThread('i', infoData, titleOffset, finalCount))
-    thread.append(writeThread('c', categoryData, titleOffset, finalCount))
-    thread.append(writeThread('l', linkData, titleOffset, finalCount))
+    thread.append(writeThread('i', infoData, infoOffset, finalCount))
+    thread.append(writeThread('c', categoryData, categoryOffset, finalCount))
+    thread.append(writeThread('l', linkData, linkOffset, finalCount))
     thread.append(writeThread('r', referenceData, referenceOffset, finalCount))
 
     for i in range(6):
@@ -544,10 +535,10 @@ class DocHandler(xml.sax.ContentHandler):
        
         if tag == 'page':
             d = Doc()
+            dictID[pageCount] = self.title.strip().encode("ascii", errors="ignore").decode()
             title, body, info, categories, links, references = d.processText(pageCount, self.text, self.title)
             i = Indexer( title, body, info, categories, links, references)
             i.createIndex()
-            dictID[pageCount] = self.title.strip()
             self.CurrentData = ''
             self.title = ''
             self.text = ''
@@ -588,6 +579,17 @@ if __name__ == '__main__':
 
     mergeFiles(fileCount)
 
+    titleOffset = []
+    offset = 0
+    with open('../data/title.txt', 'r') as f:
+        titleOffset.append(str(offset))
+        for line in f:
+            offset += len(line)
+            titleOffset.append(str(offset))
+    #titleOffset = titleOffset[:-1]
+
+    with open('../data/titleOffset.txt', 'w') as f:
+        f.write('\n'.join(titleOffset))
 
 #    with open(sys.argv[2], 'w') as fp:
 #        words = sorted(indexMap.keys())
