@@ -242,7 +242,7 @@ class Indexer():
             indexMap[word].append(string)
         
         pageCount += 1
-        if pageCount%5000 == 0:
+        if pageCount%20000 == 0:
             offset = writeIntoFile(indexMap, dictID, fileCount, offset)
             indexMap = defaultdict(list)
             dictID = {}
@@ -568,6 +568,8 @@ class Parser():
         self.parser.parse(filename)
 
 if __name__ == '__main__':
+
+    os.mkdir('../data/'
     parser = Parser(sys.argv[1])
     with open('../data/fileNumbers.txt', 'w') as f:
         f.write(str(pageCount))

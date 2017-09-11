@@ -5,6 +5,7 @@ import sys
 import threading
 import math
 import re
+import timeit
 
 offset = []
 titleOffset = []
@@ -14,46 +15,46 @@ def findFileNo(low, high, offset, word, f, typ='str'):
     while low < high:
         mid = int((low + high) / 2)
         f.seek(offset[mid])
-        testWord = f.readline().strip().split()
+        wordPtr = f.readline().strip().split()
         #try:
-        #    print(low, high, mid, offset[mid], testWord[0], word)
+        #    print(low, high, mid, offset[mid], wordPtr[0], word)
         #except:
         #    pdb.set_trace()
         if typ == 'int':
-            if int(word) == int(testWord[0]):
-                return testWord[1:], mid
-            elif int(word) > int(testWord[0]):
+            if int(word) == int(wordPtr[0]):
+                return wordPtr[1:], mid
+            elif int(word) > int(wordPtr[0]):
                 low = mid + 1
             else:
                 high = mid
         else:
-            if word == testWord[0]:
-                #print(testWord[0], mid)
-                return testWord[1:], mid
-            elif word > testWord[0]:
+            if word == wordPtr[0]:
+                #print(wordPtr[0], mid)
+                return wordPtr[1:], mid
+            elif word > wordPtr[0]:
                 low = mid + 1
             else:
                 high = mid
     return [], -1
 
 
-def findFileList(filename, fileNo, field, word, fieldFile):
+def findDocs(filename, fileNo, field, word, fieldFile):
 
     fieldOffset = []
-    tempdf = []
+    docFreq = []
     with open('../data/offset_' + field + fileNo + '.txt') as f:
         for line in f:
-            offset, docFreq = line.strip().split()
+            offset, df = line.strip().split()
             fieldOffset.append(int(offset))
-            tempdf.append(int(docFreq))
-    fileList, mid = findFileNo(0, len(fieldOffset), fieldOffset, word, fieldFile)
-    return fileList, tempdf[mid]
+            docFreq.append(int(df))
+    docList, mid = findFileNo(0, len(fieldOffset), fieldOffset, word, fieldFile)
+    return docList, docFreq[mid]
 
 
 def fieldQuery(words, fields, fvocab):
 
-    fileList = defaultdict(dict)
-    df = {}
+    docList = defaultdict(dict)
+    docFreq = {}
     for i in range(len(words)):
         word = words[i]
         field = fields[i]
@@ -64,39 +65,42 @@ def fieldQuery(words, fields, fvocab):
             fileNo = docs[0]
             filename = '../data/' + field + str(fileNo) + '.txt'
             fieldFile = open(filename, 'r')
-            returnedList, docFreq = findFileList(filename, fileNo, field, word, fieldFile)
-            fileList[word][field] = returnedList
-            df[word] = docFreq
-    return fileList, df
+            returnedList, df = findDocs(filename, fileNo, field, word, fieldFile)
+            docList[word][field] = returnedList
+            docFreq[word] = df
+    return docList, docFreq
 
 
 def simpleQuery(words, fvocab):
 
-    fileList = defaultdict(dict)
-    df = {}
+    docList = defaultdict(dict)
+    docFreq = {}
     fields = ['t', 'b', 'i', 'c', 'r', 'l']
     for word in words:
         docs, mid = findFileNo(0, len(offset), offset, word, fvocab)
         if len(docs) > 0:
             fileNo = docs[0]
-            df[word] = docs[1]
+            docFreq[word] = docs[1]
             for field in fields:
                 #print(word, field)
                 filename = '../data/' + field + str(fileNo) + '.txt'
                 fieldFile = open(filename, 'r')
-                returnedList, _ = findFileList(filename, fileNo, field, word, fieldFile)
-                fileList[word][field] = returnedList
-    return fileList, df
+                returnedList, _ = findDocs(filename, fileNo, field, word, fieldFile)
+                docList[word][field] = returnedList
+    return docList, docFreq
 
 
-def rank(results, docFreq, noOfFiles):
+def rank(results, docFreq, nfiles):
 
     docs = defaultdict(float)
 
-    denom = 1 / float(math.sqrt(len(docFreq)))
-    s = defaultdict(int)
+    s1 = defaultdict(int)
+    s2 = defaultdict(int)
+    queryIdf = {}
+
     for key in docFreq:
-        docFreq[key] = math.log((float(noOfFiles) / float(docFreq[key])))
+        queryIdf[key] = math.log((float(nfiles) - float(docFreq[key]) + 0.5) / ( float(docFreq[key]) + 0.5))
+        docFreq[key] = math.log(float(nfiles) / float(docFreq[key]))
 
     for word in results:
         fieldWisePostingList = results[word]
@@ -109,19 +113,20 @@ def rank(results, docFreq, noOfFiles):
                 if field == 'b':
                     factor = 0.25
                 if field == 'i':
-                    factor = 0.15
+                    factor = 0.25
                 if field == 'c':
-                    factor = 0.15
+                    factor = 0.1
                 if field == 'r':
                     factor = 0.05
                 if field == 'l':
                     factor = 0.05
                 for i in range(0, len(postingList), 2):
-                    s[postingList[i]] += float(postingList[i+1]) ** 2
-                    docs[postingList[i]] += float(denom * factor * math.log(1 + float(postingList[i+1])) * docFreq[word])
+                    s1[postingList[i]] += float(math.log(1+float(postingList[i+1])) * docFreq[word]) ** 2
+                    s2[postingList[i]] += float(math.log(2) * queryIdf[word]) ** 2
+                    docs[postingList[i]] += float(factor * math.log(2) * queryIdf[word] * math.log(1 + float(postingList[i+1])) * docFreq[word])
     
-    for key in docs:
-        docs[key] /= float(math.sqrt(s[key]))
+    #for key in docs:
+    #    docs[key] /= float(math.sqrt(s1[key])) * float(math.sqrt(s2[key]))
 
     return docs
 
@@ -141,7 +146,8 @@ def search():
     d = Doc()
 
     while True:
-        query = input('Type in your query:\n')
+        query = input('\nType in your query:\n')
+        start = timeit.default_timer()
         query.lower()
     
         if re.match(r'[t|b|i|c|r|l]:', query):
@@ -160,25 +166,25 @@ def search():
             tokens = d.tokenize(query)
             tokens = d.removeStopWords(tokens)
             tokens = d.stem(tokens)
-            results, docFreq = simpleQuery(tokens,  fvocab)
+            results, docFreq = simpleQuery(tokens, fvocab)
 
         
         f = open('../data/fileNumbers.txt', 'r')
-        noOfFiles = int(f.read().strip())
+        nfiles = int(f.read().strip())
         f.close()
 
-        results = rank(results, docFreq, noOfFiles)
+        results = rank(results, docFreq, nfiles)
         titleFile = open('../data/title.txt', 'r')
-        dictTitle = {}
 
+        print('\nResults:\n')
         if len(results) > 0:
-            print(results)
             results = sorted(results, key=results.get, reverse=True)
             results = results[:10]
-            #print(results[0])
             for key in results:
                 title, _ = findFileNo(0, len(titleOffset), titleOffset, key, titleFile, 'int')
                 print(' '.join(title))
+        end = timeit.default_timer()
+        print('Time taken =', end-start)
 
 
 if __name__ == '__main__':
