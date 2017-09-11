@@ -15,10 +15,10 @@ def findFileNo(low, high, offset, word, f, typ='str'):
         mid = int((low + high) / 2)
         f.seek(offset[mid])
         testWord = f.readline().strip().split()
-        try:
-            print(low, high, mid, offset[mid], testWord[0], word)
-        except:
-            pdb.set_trace()
+        #try:
+        #    print(low, high, mid, offset[mid], testWord[0], word)
+        #except:
+        #    pdb.set_trace()
         if typ == 'int':
             if int(word) == int(testWord[0]):
                 return testWord[1:], mid
@@ -28,7 +28,7 @@ def findFileNo(low, high, offset, word, f, typ='str'):
                 high = mid
         else:
             if word == testWord[0]:
-                print(testWord[0], mid)
+                #print(testWord[0], mid)
                 return testWord[1:], mid
             elif word > testWord[0]:
                 low = mid + 1
@@ -58,8 +58,8 @@ def fieldQuery(words, fields, fvocab):
         word = words[i]
         field = fields[i]
         docs, mid = findFileNo(0, len(offset), offset, word, fvocab)
-        print('docs')
-        print(docs)
+        #print('docs')
+        #print(docs)
         if len(docs) > 0:
             fileNo = docs[0]
             filename = '../data/' + field + str(fileNo) + '.txt'
@@ -80,7 +80,7 @@ def simpleQuery(words, fvocab):
             fileNo = docs[0]
             df[word] = docs[1]
             for field in fields:
-                print(word, field)
+                #print(word, field)
                 filename = '../data/' + field + str(fileNo) + '.txt'
                 fieldFile = open(filename, 'r')
                 returnedList, _ = findFileList(filename, fileNo, field, word, fieldFile)
@@ -91,29 +91,35 @@ def rank(results, docFreq, noOfFiles):
 
     docs = defaultdict(float)
 
+    denom = 1 / float(math.sqrt(len(docFreq)))
+    s = defaultdict(int)
     for key in docFreq:
-        docFreq[key] = math.log((float(docFreq[key]) / float(noOfFiles-1)))
+        docFreq[key] = math.log((float(noOfFiles-1) / float(docFreq[key])))
 
     for word in results:
         fieldWisePostingList = results[word]
-        for key in fieldWisePostingList:
-            if len(key) > 0:
-                field = key
-                postingList = fieldWisePostingList[key]
-                if key == 't':
+        for field in fieldWisePostingList:
+            if len(field) > 0:
+                field = field
+                postingList = fieldWisePostingList[field]
+                if field == 't':
                     factor = 0.3
-                if key == 'b':
+                if field == 'b':
                     factor = 0.25
-                if key == 'i':
+                if field == 'i':
                     factor = 0.15
-                if key == 'c':
+                if field == 'c':
                     factor = 0.15
-                if key == 'r':
+                if field == 'r':
                     factor = 0.5
-                if key == 'l':
+                if field == 'l':
                     factor = 0.5
                 for i in range(0, len(postingList), 2):
-                    docs[postingList[i]] += float(postingList[i+1])
+                    s[postingList[i]] += float(postingList[i+1]) ** 2
+                    docs[postingList[i]] += float(factor * float(postingList[i+1]) * docFreq[word])
+    
+    for key in docs:
+        docs[key] /= float(math.sqrt(s[key]))
 
     return docs
 
@@ -133,7 +139,7 @@ def search():
     d = Doc()
 
     while True:
-        query = input()
+        query = input('Type in your query:\n')
         query.lower()
         flag = 0
     
@@ -159,8 +165,8 @@ def search():
         noOfFiles = int(f.read().strip())
         f.close()
 
-        print('results')
-        print(results)
+        #print('results')
+        #print(results)
         results = rank(results, docFreq, noOfFiles)
         titleFile = open('../data/title.txt', 'r')
         dictTitle = {}
@@ -172,11 +178,10 @@ def search():
         if len(results) > 0:
             results = sorted(results, key=results.get, reverse=True)
             results = results[:10]
-            print(results[0])
+            #print(results[0])
             for key in results:
                 print(dictTitle[key])
 
-        print('done')
 
 if __name__ == '__main__':
 
