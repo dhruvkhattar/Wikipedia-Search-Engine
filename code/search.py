@@ -69,6 +69,7 @@ def fieldQuery(words, fields, fvocab):
             df[word] = docFreq
     return fileList, df
 
+
 def simpleQuery(words, fvocab):
 
     fileList = defaultdict(dict)
@@ -87,6 +88,7 @@ def simpleQuery(words, fvocab):
                 fileList[word][field] = returnedList
     return fileList, df
 
+
 def rank(results, docFreq, noOfFiles):
 
     docs = defaultdict(float)
@@ -94,7 +96,7 @@ def rank(results, docFreq, noOfFiles):
     denom = 1 / float(math.sqrt(len(docFreq)))
     s = defaultdict(int)
     for key in docFreq:
-        docFreq[key] = math.log((float(noOfFiles-1) / float(docFreq[key])))
+        docFreq[key] = math.log((float(noOfFiles) / float(docFreq[key])))
 
     for word in results:
         fieldWisePostingList = results[word]
@@ -111,12 +113,12 @@ def rank(results, docFreq, noOfFiles):
                 if field == 'c':
                     factor = 0.15
                 if field == 'r':
-                    factor = 0.5
+                    factor = 0.05
                 if field == 'l':
-                    factor = 0.5
+                    factor = 0.05
                 for i in range(0, len(postingList), 2):
                     s[postingList[i]] += float(postingList[i+1]) ** 2
-                    docs[postingList[i]] += float(factor * float(postingList[i+1]) * docFreq[word])
+                    docs[postingList[i]] += float(denom * factor * math.log(1 + float(postingList[i+1])) * docFreq[word])
     
     for key in docs:
         docs[key] /= float(math.sqrt(s[key]))
@@ -141,16 +143,16 @@ def search():
     while True:
         query = input('Type in your query:\n')
         query.lower()
-        flag = 0
     
         if re.match(r'[t|b|i|c|r|l]:', query):
-            flag = 1
-            words = query.strip().split(' ')
-            fields = []
+            words = re.findall(r'[t|b|c|i|l|r]:([^:]*)(?!\S)', query)
+            tempFields = re.findall(r'([t|b|c|i|l|r]):', query)
             tokens = []
-            for key in words:
-                fields.append(key[0])
-                tokens.append(key[2:])
+            fields = []
+            for i in range(len(words)):
+                for word in words[i].split():
+                    fields.append(tempFields[i])
+                    tokens.append(word)
             tokens = d.removeStopWords(tokens)
             tokens = d.stem(tokens)
             results, docFreq = fieldQuery(tokens, fields, fvocab)
@@ -165,22 +167,18 @@ def search():
         noOfFiles = int(f.read().strip())
         f.close()
 
-        #print('results')
-        #print(results)
         results = rank(results, docFreq, noOfFiles)
         titleFile = open('../data/title.txt', 'r')
         dictTitle = {}
 
-        for key in sorted(results.keys()):
-            title, _ = findFileNo(0, len(titleOffset), titleOffset, key, titleFile, 'int')
-            dictTitle[key] = ' '.join(title)
-    
         if len(results) > 0:
+            print(results)
             results = sorted(results, key=results.get, reverse=True)
             results = results[:10]
             #print(results[0])
             for key in results:
-                print(dictTitle[key])
+                title, _ = findFileNo(0, len(titleOffset), titleOffset, key, titleFile, 'int')
+                print(' '.join(title))
 
 
 if __name__ == '__main__':
