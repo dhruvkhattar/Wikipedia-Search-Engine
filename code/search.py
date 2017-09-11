@@ -121,9 +121,9 @@ def rank(results, docFreq, nfiles):
                 if field == 'l':
                     factor = 0.05
                 for i in range(0, len(postingList), 2):
-                    s1[postingList[i]] += float(math.log(1+float(postingList[i+1])) * docFreq[word]) ** 2
-                    s2[postingList[i]] += float(math.log(2) * queryIdf[word]) ** 2
-                    docs[postingList[i]] += float(factor * math.log(2) * queryIdf[word] * math.log(1 + float(postingList[i+1])) * docFreq[word])
+                    s1[postingList[i]] += float((1 + math.log(float(postingList[i+1]))) * docFreq[word]) ** 2
+                    s2[postingList[i]] += float(queryIdf[word]) ** 2
+                    docs[postingList[i]] += float( factor * (1+math.log(float(postingList[i+1]))) * docFreq[word])
     
     #for key in docs:
     #    docs[key] /= float(math.sqrt(s1[key])) * float(math.sqrt(s2[key]))

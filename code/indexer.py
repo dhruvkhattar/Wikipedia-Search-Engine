@@ -569,7 +569,7 @@ class Parser():
 
 if __name__ == '__main__':
 
-    os.mkdir('../data/'
+    os.mkdir('../data')
     parser = Parser(sys.argv[1])
     with open('../data/fileNumbers.txt', 'w') as f:
         f.write(str(pageCount))
