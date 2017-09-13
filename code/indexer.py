@@ -258,7 +258,6 @@ class writeThread(threading.Thread):
         self.data = data
         self.count = count
         self.offset = offset
-        self.count = count
 
     def run(self):
 
@@ -405,14 +404,6 @@ def writeFinalIndex(data, finalCount, offsetSize):
             prevReference += len(string) + 1
             referenceData.append(string)
 
-        
-    try:
-        if os.path.getsize('../data/b' + str(finalCount) + '.txt') > 10485760:
-            finalCount += 1
-    except:
-        pass
-
-
     thread = []
     
     thread.append(writeThread('t', titleData, titleOffset, finalCount))
@@ -434,7 +425,7 @@ def writeFinalIndex(data, finalCount, offsetSize):
     with open('../data/offset.txt', 'a') as f:
         f.write('\n'.join(offset))
 
-    return finalCount, offsetSize
+    return finalCount+1, offsetSize
 
 
 def mergeFiles(fileCount):
@@ -465,7 +456,7 @@ def mergeFiles(fileCount):
             if flag[i]:
                 if words[i][0] == temp:
                     data[temp].extend(words[i][1:])
-                    if count == 1000000:
+                    if count == 100000:
                         oldFileCount = finalCount
                         finalCount, offsetSize = writeFinalIndex(data, finalCount, offsetSize)
                         if oldFileCount != finalCount:
@@ -475,7 +466,7 @@ def mergeFiles(fileCount):
                     if top[i] == '':
                         flag[i] = 0
                         files[i].close()
-                        os.remove('../data/index' + str(i) + '.txt')
+                        #os.remove('../data/index' + str(i) + '.txt')
                     else:
                         words[i] = top[i].split()
                         if words[i][0] not in heap:
@@ -499,16 +490,20 @@ def writeIntoFile(index, dictID, fileCount, titleOffset):
         f.write('\n'.join(data))
 
     data = []
-    #dataOffset = []
+    dataOffset = []
     for key in dictID:
         temp = str(key) + ' ' + dictID[key].strip()
         data.append(temp)
-        #dataOffset.append(str(prevTitleOffset))
-        prevTitleOffset += len(temp)
+        dataOffset.append(str(prevTitleOffset))
+        prevTitleOffset += len(temp) + 1
 
     filename = '../data/title.txt'
     with open(filename, 'a') as f:
         f.write('\n'.join(data))
+    
+    filename = '../data/titleOffset.txt'
+    with open(filename, 'a') as f:
+        f.write('\n'.join(dataOffset))
 
     return prevTitleOffset
 
@@ -569,7 +564,6 @@ class Parser():
 
 if __name__ == '__main__':
 
-    os.mkdir('../data')
     parser = Parser(sys.argv[1])
     with open('../data/fileNumbers.txt', 'w') as f:
         f.write(str(pageCount))
@@ -581,17 +575,17 @@ if __name__ == '__main__':
 
     mergeFiles(fileCount)
 
-    titleOffset = []
-    offset = 0
-    with open('../data/title.txt', 'r') as f:
-        titleOffset.append(str(offset))
-        for line in f:
-            offset += len(line)
-            titleOffset.append(str(offset))
+#    titleOffset = []
+#    offset = 0
+#    with open('../data/title.txt', 'r') as f:
+#        titleOffset.append(str(offset))
+#        for line in f:
+#            offset += len(line)
+#            titleOffset.append(str(offset))
     #titleOffset = titleOffset[:-1]
 
-    with open('../data/titleOffset.txt', 'w') as f:
-        f.write('\n'.join(titleOffset))
+#    with open('../data/titleOffset.txt', 'w') as f:
+#        f.write('\n'.join(titleOffset))
 
 #    with open(sys.argv[2], 'w') as fp:
 #        words = sorted(indexMap.keys())
