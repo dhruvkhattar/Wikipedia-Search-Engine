@@ -12,6 +12,7 @@ from nltk.stem.porter import *
 import Stemmer
 import threading
 from unidecode import unidecode
+from tqdm import tqdm
 
 stemmer = Stemmer.Stemmer('english')
 #stemmer = PorterStemmer()
@@ -261,11 +262,11 @@ class writeThread(threading.Thread):
 
     def run(self):
 
-        filename = '../data/' + self.field + str(self.count) + '.txt'
+        filename = '../data3/' + self.field + str(self.count) + '.txt'
         with open(filename, 'w') as f:
             f.write('\n'.join(self.data))
         
-        filename = '../data/offset_' + self.field + str(self.count) + '.txt'
+        filename = '../data3/offset_' + self.field + str(self.count) + '.txt'
         with open(filename, 'w') as f:
             f.write('\n'.join(self.offset))
 
@@ -281,7 +282,7 @@ def writeFinalIndex(data, finalCount, offsetSize):
     distinctWords = []
     offset = []
 
-    for key in sorted(data.keys()):
+    for key in tqdm(sorted(data.keys())):
         docs = data[key]
         temp = []
         
@@ -342,7 +343,7 @@ def writeFinalIndex(data, finalCount, offsetSize):
     referenceData = []
     prevReference = 0
 
-    for key in sorted(data.keys()):
+    for key in tqdm(sorted(data.keys())):
 
         if key in title:
             string = key + ' '
@@ -419,10 +420,10 @@ def writeFinalIndex(data, finalCount, offsetSize):
     for i in range(6):
         thread[i].join()
 
-    with open('../data/vocab.txt', 'a') as f:
+    with open('../data3/vocab.txt', 'a') as f:
         f.write('\n'.join(distinctWords))
 
-    with open('../data/offset.txt', 'a') as f:
+    with open('../data3/offset.txt', 'a') as f:
         f.write('\n'.join(offset))
 
     return finalCount+1, offsetSize
@@ -452,11 +453,12 @@ def mergeFiles(fileCount):
     while any(flag) == 1:
         temp = heapq.heappop(heap)
         count += 1
+        print(count)
         for i in range(fileCount):
             if flag[i]:
                 if words[i][0] == temp:
                     data[temp].extend(words[i][1:])
-                    if count == 100000:
+                    if count%1000000 == 0:
                         oldFileCount = finalCount
                         finalCount, offsetSize = writeFinalIndex(data, finalCount, offsetSize)
                         if oldFileCount != finalCount:
@@ -564,15 +566,16 @@ class Parser():
 
 if __name__ == '__main__':
 
-    parser = Parser(sys.argv[1])
-    with open('../data/fileNumbers.txt', 'w') as f:
-        f.write(str(pageCount))
+#    parser = Parser(sys.argv[1])
+#    with open('../data/fileNumbers.txt', 'w') as f:
+#        f.write(str(pageCount))
     
-    offset = writeIntoFile(indexMap, dictID, fileCount, offset)
-    indexMap = defaultdict(list)
-    dictID = {}
-    fileCount += 1
+#    offset = writeIntoFile(indexMap, dictID, fileCount, offset)
+#    indexMap = defaultdict(list)
+#    dictID = {}
+#    fileCount += 1
 
+    fileCount = 882
     mergeFiles(fileCount)
 
 #    titleOffset = []

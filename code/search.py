@@ -148,7 +148,7 @@ def search():
     while True:
         query = input('\nType in your query:\n')
         start = timeit.default_timer()
-        query.lower()
+        query = query.lower()
     
         if re.match(r'[t|b|i|c|r|l]:', query):
             words = re.findall(r'[t|b|c|i|l|r]:([^:]*)(?!\S)', query)
