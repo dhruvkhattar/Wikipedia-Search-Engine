@@ -458,11 +458,7 @@ def mergeFiles(fileCount):
             if flag[i]:
                 if words[i][0] == temp:
                     data[temp].extend(words[i][1:])
-<<<<<<< HEAD
                     if count%1000000 == 0:
-=======
-                    if count == 1000000:
->>>>>>> 1a9bd03c3fe15da50e062b76644bdeb58c08d66b
                         oldFileCount = finalCount
                         finalCount, offsetSize = writeFinalIndex(data, finalCount, offsetSize)
                         if oldFileCount != finalCount:
