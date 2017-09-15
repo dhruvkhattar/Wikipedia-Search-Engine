@@ -262,11 +262,11 @@ class writeThread(threading.Thread):
 
     def run(self):
 
-        filename = '../data3/' + self.field + str(self.count) + '.txt'
+        filename = '../data4/' + self.field + str(self.count) + '.txt'
         with open(filename, 'w') as f:
             f.write('\n'.join(self.data))
         
-        filename = '../data3/offset_' + self.field + str(self.count) + '.txt'
+        filename = '../data4/offset_' + self.field + str(self.count) + '.txt'
         with open(filename, 'w') as f:
             f.write('\n'.join(self.offset))
 
@@ -420,10 +420,10 @@ def writeFinalIndex(data, finalCount, offsetSize):
     for i in range(6):
         thread[i].join()
 
-    with open('../data3/vocab.txt', 'a') as f:
+    with open('../data4/vocab.txt', 'a') as f:
         f.write('\n'.join(distinctWords))
 
-    with open('../data3/offset.txt', 'a') as f:
+    with open('../data4/offset.txt', 'a') as f:
         f.write('\n'.join(offset))
 
     return finalCount+1, offsetSize
@@ -441,7 +441,7 @@ def mergeFiles(fileCount):
     offsetSize = 0
 
     for i in range(fileCount):
-        filename = '../data/index' + str(i) + '.txt'
+        filename = '../data4/index' + str(i) + '.txt'
         files[i] = open(filename, 'r')
         flag[i] = 1
         top[i] = files[i].readline().strip()
@@ -481,13 +481,13 @@ def writeIntoFile(index, dictID, fileCount, titleOffset):
 
     prevTitleOffset = titleOffset
     data = []
-    for key in index:
+    for key in sorted(index.keys()):
         string = key + ' '
         postings = index[key]
         string += ' '.join(postings)
         data.append(string)
 
-    filename = '../data/index' + str(fileCount) + '.txt'
+    filename = '../data4/index' + str(fileCount) + '.txt'
     with open(filename, 'w') as f:
         f.write('\n'.join(data))
 
@@ -499,11 +499,11 @@ def writeIntoFile(index, dictID, fileCount, titleOffset):
         dataOffset.append(str(prevTitleOffset))
         prevTitleOffset += len(temp) + 1
 
-    filename = '../data/title.txt'
+    filename = '../data4/title.txt'
     with open(filename, 'a') as f:
         f.write('\n'.join(data))
     
-    filename = '../data/titleOffset.txt'
+    filename = '../data4/titleOffset.txt'
     with open(filename, 'a') as f:
         f.write('\n'.join(dataOffset))
 
@@ -566,28 +566,28 @@ class Parser():
 
 if __name__ == '__main__':
 
-#    parser = Parser(sys.argv[1])
-#    with open('../data/fileNumbers.txt', 'w') as f:
-#        f.write(str(pageCount))
-    
-#    offset = writeIntoFile(indexMap, dictID, fileCount, offset)
-#    indexMap = defaultdict(list)
-#    dictID = {}
-#    fileCount += 1
+    parser = Parser(sys.argv[1])
+    with open('../data4/fileNumbers.txt', 'w') as f:
+        f.write(str(pageCount))
+   
+    offset = writeIntoFile(indexMap, dictID, fileCount, offset)
+    indexMap = defaultdict(list)
+    dictID = {}
+    fileCount += 1
 
     fileCount = 882
     mergeFiles(fileCount)
 
 #    titleOffset = []
 #    offset = 0
-#    with open('../data/title.txt', 'r') as f:
+#    with open('../data4/title.txt', 'r') as f:
 #        titleOffset.append(str(offset))
 #        for line in f:
 #            offset += len(line)
 #            titleOffset.append(str(offset))
     #titleOffset = titleOffset[:-1]
 
-#    with open('../data/titleOffset.txt', 'w') as f:
+#    with open('../data4/titleOffset.txt', 'w') as f:
 #        f.write('\n'.join(titleOffset))
 
 #    with open(sys.argv[2], 'w') as fp:
