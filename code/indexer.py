@@ -262,11 +262,11 @@ class writeThread(threading.Thread):
 
     def run(self):
 
-        filename = '../data4/' + self.field + str(self.count) + '.txt'
+        filename = '../data/' + self.field + str(self.count) + '.txt'
         with open(filename, 'w') as f:
             f.write('\n'.join(self.data))
         
-        filename = '../data4/offset_' + self.field + str(self.count) + '.txt'
+        filename = '../data/offset_' + self.field + str(self.count) + '.txt'
         with open(filename, 'w') as f:
             f.write('\n'.join(self.offset))
 
@@ -420,11 +420,13 @@ def writeFinalIndex(data, finalCount, offsetSize):
     for i in range(6):
         thread[i].join()
 
-    with open('../data4/vocab.txt', 'a') as f:
+    with open('../data/vocab.txt', 'a') as f:
         f.write('\n'.join(distinctWords))
+        f.write('\n')
 
-    with open('../data4/offset.txt', 'a') as f:
+    with open('../data/offset.txt', 'a') as f:
         f.write('\n'.join(offset))
+        f.write('\n')
 
     return finalCount+1, offsetSize
 
@@ -454,16 +456,15 @@ def mergeFiles(fileCount):
         temp = heapq.heappop(heap)
         count += 1
         print(count)
+        if count%100000 == 0:
+            oldFileCount = finalCount
+            finalCount, offsetSize = writeFinalIndex(data, finalCount, offsetSize)
+            if oldFileCount != finalCount:
+                data = defaultdict(list)
         for i in range(fileCount):
             if flag[i]:
                 if words[i][0] == temp:
                     data[temp].extend(words[i][1:])
-                    if count%1000000 == 0:
-                        oldFileCount = finalCount
-                        finalCount, offsetSize = writeFinalIndex(data, finalCount, offsetSize)
-                        if oldFileCount != finalCount:
-                            data = defaultdict(list)
-
                     top[i] = files[i].readline().strip()
                     if top[i] == '':
                         flag[i] = 0
@@ -487,25 +488,27 @@ def writeIntoFile(index, dictID, fileCount, titleOffset):
         string += ' '.join(postings)
         data.append(string)
 
-    filename = '../data4/index' + str(fileCount) + '.txt'
+    filename = '../data/index' + str(fileCount) + '.txt'
     with open(filename, 'w') as f:
         f.write('\n'.join(data))
 
     data = []
     dataOffset = []
-    for key in dictID:
+    for key in sorted(dictID):
         temp = str(key) + ' ' + dictID[key].strip()
         data.append(temp)
         dataOffset.append(str(prevTitleOffset))
         prevTitleOffset += len(temp) + 1
 
-    filename = '../data4/title.txt'
+    filename = '../data/title.txt'
     with open(filename, 'a') as f:
         f.write('\n'.join(data))
+        f.write('\n')
     
-    filename = '../data4/titleOffset.txt'
+    filename = '../data/titleOffset.txt'
     with open(filename, 'a') as f:
         f.write('\n'.join(dataOffset))
+        f.write('\n')
 
     return prevTitleOffset
 
@@ -567,35 +570,11 @@ class Parser():
 if __name__ == '__main__':
 
     parser = Parser(sys.argv[1])
-    with open('../data4/fileNumbers.txt', 'w') as f:
+    with open('../data/fileNumbers.txt', 'w') as f:
         f.write(str(pageCount))
    
     offset = writeIntoFile(indexMap, dictID, fileCount, offset)
     indexMap = defaultdict(list)
     dictID = {}
     fileCount += 1
-
-    fileCount = 882
     mergeFiles(fileCount)
-
-#    titleOffset = []
-#    offset = 0
-#    with open('../data4/title.txt', 'r') as f:
-#        titleOffset.append(str(offset))
-#        for line in f:
-#            offset += len(line)
-#            titleOffset.append(str(offset))
-    #titleOffset = titleOffset[:-1]
-
-#    with open('../data4/titleOffset.txt', 'w') as f:
-#        f.write('\n'.join(titleOffset))
-
-#    with open(sys.argv[2], 'w') as fp:
-#        words = sorted(indexMap.keys())
-#        for word in words:
-#            indexMap[word].sort(key=operator.itemgetter(1), reverse=True)
-#            fp.write(word + ' - ')
-#            for each in indexMap[word]:
-#                fp.write(each[0] + ' ')
-#            fp.write('\n')
-#    fp.close()

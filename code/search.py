@@ -90,12 +90,12 @@ def simpleQuery(words, fvocab):
     return docList, docFreq
 
 
-def rank(results, docFreq, nfiles):
+def rank(results, docFreq, nfiles, qtype):
 
     docs = defaultdict(float)
 
-    s1 = defaultdict(int)
-    s2 = defaultdict(int)
+    #s1 = defaultdict(int)
+    #s2 = defaultdict(int)
     queryIdf = {}
 
     for key in docFreq:
@@ -109,11 +109,11 @@ def rank(results, docFreq, nfiles):
                 field = field
                 postingList = fieldWisePostingList[field]
                 if field == 't':
-                    factor = 0.3
+                    factor = 0.25
                 if field == 'b':
                     factor = 0.25
                 if field == 'i':
-                    factor = 0.25
+                    factor = 0.20
                 if field == 'c':
                     factor = 0.1
                 if field == 'r':
@@ -121,8 +121,8 @@ def rank(results, docFreq, nfiles):
                 if field == 'l':
                     factor = 0.05
                 for i in range(0, len(postingList), 2):
-                    s1[postingList[i]] += float((1 + math.log(float(postingList[i+1]))) * docFreq[word]) ** 2
-                    s2[postingList[i]] += float(queryIdf[word]) ** 2
+                    #s1[postingList[i]] += float((1 + math.log(float(postingList[i+1]))) * docFreq[word]) ** 2
+                    #s2[postingList[i]] += float(queryIdf[word]) ** 2
                     docs[postingList[i]] += float( factor * (1+math.log(float(postingList[i+1]))) * docFreq[word])
     
     #for key in docs:
@@ -132,7 +132,8 @@ def rank(results, docFreq, nfiles):
 
 
 def search():
-    
+
+    print('Loading Search Engine\n')
     with open('../data/titleOffset.txt', 'r') as f:
         for line in f:
             titleOffset.append(int(line.strip()))
@@ -142,6 +143,10 @@ def search():
             offset.append(int(line.strip()))
     
     fvocab = open('../data/vocab.txt', 'r')
+    titleFile = open('../data/title.txt', 'r')
+    f = open('../data/fileNumbers.txt', 'r')
+    nfiles = int(f.read().strip())
+    f.close()
 
     d = Doc()
 
@@ -162,19 +167,14 @@ def search():
             tokens = d.removeStopWords(tokens)
             tokens = d.stem(tokens)
             results, docFreq = fieldQuery(tokens, fields, fvocab)
+            results = rank(results, docFreq, nfiles, 'f')
         else:
             tokens = d.tokenize(query)
             tokens = d.removeStopWords(tokens)
             tokens = d.stem(tokens)
             results, docFreq = simpleQuery(tokens, fvocab)
+            results = rank(results, docFreq, nfiles, 's')
 
-        
-        f = open('../data/fileNumbers.txt', 'r')
-        nfiles = int(f.read().strip())
-        f.close()
-
-        results = rank(results, docFreq, nfiles)
-        titleFile = open('../data/title.txt', 'r')
 
         print('\nResults:\n')
         if len(results) > 0:
