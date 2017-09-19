@@ -1,7 +1,6 @@
 # Wikipedia-Search-Engine
 This repository consists of a search engine over the 59GB Wikipedia dump. The code consists of indexer.py and search.py. 
-The search returns a ranked list of articles in real time. 
-Simple and multi field query are search on Wikipedia Corpus is implemented.
+Both simple and multi field queries have been implemented. The search returns a ranked list of articles in real time. 
 
 ## Indexing:
 + Parsing: SAX Parser is used to parse the XML corpus.
